@@ -18,6 +18,7 @@ model User {
   email     String   @unique
   password  String   
   name      String
+  profileImage  String   @default("https://static.vecteezy.com/system/resources/previews/058/338/541/large_2x/blank-user-avatar-icon-in-hd-vector.jpg")
   createdAt DateTime @default(now())
 
   createdSurveys Survey[]       @relation("SurveyCreator")
@@ -30,6 +31,9 @@ model Survey {
   description String?
   creatorId   String
   createdAt   DateTime   @default(now())
+  coverImage  String
+  primaryColor  String
+  answeredCount  Int
   creator     User       @relation("SurveyCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   questions   Question[]
 }

@@ -1,9 +1,17 @@
 import { createRouter, RouterProvider } from '@tanstack/react-router'
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { routeTree } from './routeTree.gen'
+import { AuthProvider } from './hooks/useAuth'
+import './index.css';
+import { Toaster } from "sonner";
+import { useAuth } from "@/hooks/useAuth"
 
-const router = createRouter({ routeTree })
+const router = createRouter({
+  routeTree,
+  context: {
+    user: undefined,
+  },
+})
 
 declare module '@tanstack/react-router' {
   interface Register {
@@ -11,11 +19,31 @@ declare module '@tanstack/react-router' {
   }
 }
 
-const rootEl = document.getElementById('root')
-if (!rootEl) throw new Error('root element missing')
+function AppRouter() {
+  const { user } = useAuth();
+  console.log(user)
+
+  return (
+    <RouterProvider
+      router={router}
+      context={{ user }}
+    />
+  )
+}
+
+const rootEl = document.getElementById('root');
+
+if (!rootEl)
+  throw new Error('root element missing')
 
 createRoot(rootEl).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>,
+  <AuthProvider>
+    <Toaster
+      richColors
+      position='top-right'
+      theme='dark'
+      duration={3000}
+    />
+    <AppRouter />
+  </AuthProvider>
 )
