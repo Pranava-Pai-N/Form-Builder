@@ -1,7 +1,9 @@
-import { createFileRoute, Link, useParams } from '@tanstack/react-router'
-import { useMemo } from 'react'
-import { getSurvey, getSurveyResponses } from '../../../lib/storage';
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { getSurvey } from '../../../lib/api';
+import { getSurveyResponses } from '../../../lib/storage';
 import { requireAuth } from "@/components/authenticatedRoutes";
+import type { Survey } from "../../../lib/types"
 
 export const Route = createFileRoute('/survey/$id/responses')({
   beforeLoad : requireAuth,
@@ -10,8 +12,25 @@ export const Route = createFileRoute('/survey/$id/responses')({
 
 function SurveyResponsesPage() {
   const { id } = Route.useParams() as { id: string }
-  const survey = useMemo(() => getSurvey(id), [id])
-  const responses = useMemo(() => getSurveyResponses(id), [id])
+  const [survey, setSurvey] = useState<Survey | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+  const responses = getSurveyResponses(id)
+
+  useEffect(() => {
+    const loadSurvey = async () => {
+      try {
+        const response = await getSurvey(id)
+        setSurvey(response.survey)
+      } catch {
+        setNotFound(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSurvey()
+  }, [id])
 
   if (!survey) {
     return (
@@ -25,7 +44,7 @@ function SurveyResponsesPage() {
     )
   }
 
-  const questionViews = survey.questions.map((question) => {
+  const questionViews = survey.questions.map((question : any) => {
     const answers = responses
       .map((response) => response.answers.find((answer) => answer.questionId === question.id))
       .filter((answer): answer is { questionId: string; value: string } => Boolean(answer))

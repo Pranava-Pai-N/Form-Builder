@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useAuth } from '../hooks/useAuth'
 import { toast } from 'sonner'
+import { useAuth } from '../hooks/useAuth'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth()
@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     src={
                       user?.profileImage
                     }
-                    alt="Profile Image"
+                    alt="Profile"
                     className="h-9 w-9 rounded-full border border-slate-700 object-cover"
                   />
 

@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useNavigate, useParams } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
-import { getSurvey, updateSurvey } from '../../lib/storage'
-import type { Question, QuestionType, SurveyPayload } from '../../lib/types';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { getSurvey, updateSurvey } from '../../lib/api'
+import type { Question, QuestionType, Survey, SurveyPayload } from '../../lib/types';
 import { requireAuth } from "@/components/authenticatedRoutes";
 
 export const Route = createFileRoute('/survey/$id')({
-  beforeLoad : requireAuth,
+  beforeLoad: requireAuth,
   component: SurveyEditorPage,
 })
 
@@ -15,28 +15,76 @@ const questionTypes: Array<{ label: string; value: QuestionType }> = [
   { label: 'Rating', value: 'rating' },
 ]
 
-function SurveyEditorPage() {
+export function SurveyEditorPage() {
   const { id } = Route.useParams() as { id: string }
-  const survey = useMemo(() => getSurvey(id), [id])
   const navigate = useNavigate()
-
+  const [survey, setSurvey] = useState<Survey | null>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [coverImage, setCoverImage] = useState('')
   const [primaryColor, setPrimaryColor] = useState('#7c3aed')
   const [questions, setQuestions] = useState<Question[]>([])
   const [message, setMessage] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+  const [rawOptionsInput, setRawOptionsInput] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    if (!survey) return
+    const loadSurvey = async () => {
+      try {
+        const response = await getSurvey(id)
+        setSurvey(response.survey)
+      } catch {
+        setNotFound(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSurvey()
+  }, [id])
+
+  useEffect(() => {
+    if (!survey) return;
+
     setTitle(survey.title)
     setDescription(survey.description ?? '')
     setCoverImage(survey.coverImage)
     setPrimaryColor(survey.primaryColor)
     setQuestions(survey.questions)
+
+    setRawOptionsInput((prev) => {
+      const updatedStrings = { ...prev }
+      survey.questions.forEach((q) => {
+        if (q.type === 'multiple_choice') {
+          const serverString = (q.options ?? []).join(', ')
+          
+          const localCleaned = (prev[q.id] ?? '')
+            .split(',')
+            .map((o) => o.trim())
+            .filter(Boolean)
+            .join(',')
+
+          const serverCleaned = (q.options ?? []).join(',')
+
+          if (localCleaned !== serverCleaned || !prev[q.id]) {
+            updatedStrings[q.id] = serverString
+          }
+        }
+      })
+      return updatedStrings
+    })
   }, [survey])
 
-  if (!survey) {
+  if (loading) {
+    return (
+      <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-10 text-center text-slate-300">
+        <p className="text-xl font-semibold text-white">Loading survey…</p>
+      </div>
+    )
+  }
+
+  if (notFound || !survey) {
     return (
       <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-10 text-center text-slate-300">
         <p className="text-xl font-semibold text-white">Survey not found</p>
@@ -58,9 +106,9 @@ function SurveyEditorPage() {
               options:
                 update.type === 'multiple_choice'
                   ? update.options ?? question.options ?? []
-                  : question.type === 'multiple_choice' && update.type as string !== 'multiple_choice'
-                  ? undefined
-                  : question.options,
+                  : question.type === 'multiple_choice' && (update.type as string) !== 'multiple_choice'
+                    ? undefined
+                    : question.options,
             }
           : question
       )
@@ -68,10 +116,16 @@ function SurveyEditorPage() {
   }
 
   const addQuestion = (type: QuestionType) => {
+    const newId = `${type}-${Date.now()}`
+    
+    if (type === 'multiple_choice') {
+      setRawOptionsInput(prev => ({ ...prev, [newId]: 'Option 1, Option 2' }))
+    }
+
     setQuestions((current) => [
       ...current,
       {
-        id: `${type}-${Date.now()}`,
+        id: newId,
         text: type === 'short_text' ? 'New short answer question' : type === 'multiple_choice' ? 'New multiple choice question' : 'How would you rate this?',
         type,
         isRequired: false,
@@ -83,13 +137,19 @@ function SurveyEditorPage() {
 
   const removeQuestion = (questionId: string) => {
     setQuestions((current) => current.filter((question) => question.id !== questionId))
+    setRawOptionsInput((prev) => {
+      const copy = { ...prev }
+      delete copy[questionId]
+      return copy
+    })
   }
 
-  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
     if (!title.trim()) {
       setMessage('Survey title is required.')
-      return
+      return;
     }
 
     const payload: SurveyPayload = {
@@ -104,8 +164,13 @@ function SurveyEditorPage() {
       })),
     }
 
-    updateSurvey(id, payload)
-    setMessage('Survey saved successfully.')
+    try {
+      const response = await updateSurvey(id, payload)
+      setSurvey(response.survey)
+      setMessage('Survey saved successfully.')
+    } catch (error: any) {
+      setMessage(error?.message ?? 'Unable to save survey. Please try again.')
+    }
   }
 
   return (
@@ -251,19 +316,24 @@ function SurveyEditorPage() {
                 </div>
 
                 {question.type === 'multiple_choice' ? (
-                  <label className="block">
+                  <label className="block mt-4">
                     <span className="text-sm text-slate-300">Options</span>
                     <input
-                      value={(question.options ?? []).join(', ')}
-                      onChange={(event) =>
-                        handleQuestionChange(question.id, {
-                          options: event.target.value
-                            .split(',')
-                            .map((option) => option.trim())
-                            .filter(Boolean),
-                        })
-                      }
+                      value={rawOptionsInput[question.id] ?? ''}
+                      onChange={(event) => {
+                        const nextVal = event.target.value
+                        
+                        setRawOptionsInput(prev => ({ ...prev, [question.id]: nextVal }))
+                        
+                        const cleanArray = nextVal
+                          .split(',')
+                          .map((o) => o.trim())
+                          .filter(Boolean)
+
+                        handleQuestionChange(question.id, { options: cleanArray })
+                      }}
                       className="mt-2 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-indigo-500"
+                      placeholder="Option 1, Option 2"
                     />
                     <p className="mt-2 text-sm text-slate-500">Separate options with commas.</p>
                   </label>

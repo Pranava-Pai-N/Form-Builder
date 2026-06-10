@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import { loadSurveys } from '../../lib/storage'
+import { getUserSurveys } from '../../lib/api'
 import type { Survey } from '../../lib/types'
 import { toast } from 'sonner';
 import { requireAuth } from "@/components/authenticatedRoutes"
@@ -14,7 +14,16 @@ function DashboardPage() {
   const [surveys, setSurveys] = useState<Survey[]>([])
 
   useEffect(() => {
-    setSurveys(loadSurveys())
+    const load = async () => {
+      try {
+        const response = await getUserSurveys()
+        setSurveys(response.surveys)
+      } catch {
+        setSurveys([])
+      }
+    }
+
+    load()
   }, [])
 
   const activeCount = surveys.length

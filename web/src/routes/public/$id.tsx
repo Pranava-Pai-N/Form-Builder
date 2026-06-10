@@ -1,7 +1,8 @@
-import { createFileRoute, Link, useNavigate, useParams } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import { getGuestId, getSurvey, hasSubmittedSurvey, submitSurveyResponse } from '../../lib/storage'
-import type { Question } from '../../lib/types'
+import { getGuestId, hasSubmittedSurvey, submitSurveyResponse } from '../../lib/storage'
+import { getSurvey } from '../../lib/api'
+import type { Question, Survey } from '../../lib/types'
 
 export const Route = createFileRoute('/public/$id')({
     component: PublicSurveyPage,
@@ -9,12 +10,29 @@ export const Route = createFileRoute('/public/$id')({
 
 function PublicSurveyPage() {
     const { id } = Route.useParams() as { id: string }
-    const survey = useMemo(() => getSurvey(id), [id])
+    const [survey, setSurvey] = useState<Survey | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [notFound, setNotFound] = useState(false)
     const [answers, setAnswers] = useState<Record<string, string>>({})
     const [submitted, setSubmitted] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const navigate = useNavigate()
     const guestId = useMemo(() => getGuestId(), [])
+
+    useEffect(() => {
+        const loadSurvey = async () => {
+            try {
+                const response = await getSurvey(id)
+                setSurvey(response.survey)
+            } catch {
+                setNotFound(true)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        loadSurvey()
+    }, [id])
 
     useEffect(() => {
         if (!survey) return
@@ -26,7 +44,15 @@ function PublicSurveyPage() {
         )
     }, [survey])
 
-    if (!survey) {
+    if (loading) {
+        return (
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-10 text-center text-slate-300">
+                <p className="text-xl font-semibold text-white">Loading survey…</p>
+            </div>
+        )
+    }
+
+    if (notFound || !survey) {
         return (
             <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-10 text-center text-slate-300">
                 <p className="text-xl font-semibold text-white">Survey not found</p>

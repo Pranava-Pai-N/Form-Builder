@@ -38,6 +38,8 @@ export const logoutUser = () =>
 export const getCurrentUser = () => apiFetch<{ success: boolean; user: User }>('/user/me')
 export const getUserSurveys = () => apiFetch<{ success: boolean; surveys: Survey[] }>('/survey')
 
+// Survey Routes
+
 export const createSurvey = (payload: SurveyPayload) =>
   apiFetch<{ success: boolean; survey: Survey }>('/survey', {
     method: 'POST',
@@ -46,3 +48,12 @@ export const createSurvey = (payload: SurveyPayload) =>
 
 export const getSurvey = (surveyId: string) =>
   apiFetch<{ success: boolean; survey: Survey }>(`/survey/${surveyId}`)
+
+export const updateSurvey = (surveyId: string, payload: SurveyPayload) =>
+  apiFetch<{ success: boolean; survey: Survey }>(`/survey/${surveyId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+
+export const getResponsesbySurveyId = (surveyId: string) =>
+  apiFetch<{ success: boolean; survey: Survey; responseResult: any }>(`/survey/${surveyId}/responses`)

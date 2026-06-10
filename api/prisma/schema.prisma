@@ -45,6 +45,7 @@ model Question {
   type       questionType
   isRequired Boolean      @default(true)
   order      Int          @default(0)
+  options    Json?
 
   survey  Survey         @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   answers SurveyAnswer[]
