@@ -178,8 +178,8 @@ const loginUser = async (content: Context<AppEnv>) => {
 
   const cookieOptions = {
     httpOnly: true,
-    secure: false,
-    sameSite: 'Strict' as const,
+    secure: true,
+    sameSite: 'none' as const,
     maxAge: 60 * 60,
     path: '/',
   }
@@ -232,9 +232,10 @@ const getMe = async (content: Context<AppEnv>) => {
 const logoutUser = async (content: Context<AppEnv>) => {
   setCookie(content, 'token', '', {
     httpOnly: true,
-    secure: false,
-    sameSite: 'Strict',
+    secure: true,
+    sameSite: 'none',
     maxAge: 0,
+    path: '/'
   })
 
   return content.json(
