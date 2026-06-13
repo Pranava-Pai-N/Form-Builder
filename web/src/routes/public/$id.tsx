@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { getSurvey, submitSurvey } from '../../lib/api'
 import { getGuestId, hasSubmittedSurvey, submitSurveyResponse } from '../../lib/storage'
 import type { Question, Survey } from '../../lib/types'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/public/$id')({
   component: PublicSurveyPage,
@@ -93,6 +94,7 @@ function PublicSurveyPage() {
 
     if (!isValid) {
       setError('Please answer all required questions.')
+      toast.error('Please answer all required questions.')
       return
     }
 
@@ -115,6 +117,7 @@ function PublicSurveyPage() {
       console.error(err)
       if (err instanceof Error) {
         setError(err?.message)
+        toast.error(err?.message)
       } else {
         setError('Failed to submit responses. Please check your network connection.')
       }

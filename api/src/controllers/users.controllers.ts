@@ -182,7 +182,7 @@ const loginUser = async (content: Context<AppEnv>) => {
     sameSite: credentialProvider.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 60 * 60,
     path: '/',
-  } as const;
+  } as const
 
   setCookie(content, 'token', token, cookieOptions)
 

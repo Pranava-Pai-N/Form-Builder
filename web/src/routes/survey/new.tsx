@@ -149,7 +149,7 @@ function CreateSurveyPage() {
             </span>
             <div className="relative flex h-11 w-full items-center rounded-2xl border border-slate-800 bg-slate-950/60 px-3 transition-within focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/10">
               <input
-                type='color'
+                type="color"
                 value={primaryColor}
                 onChange={(event) => setPrimaryColor(event.target.value)}
                 className="h-7 w-10 cursor-pointer rounded-lg border border-slate-800 bg-transparent outline-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-0"

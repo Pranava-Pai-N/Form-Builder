@@ -42,6 +42,7 @@ export function createSurvey(payload: SurveyPayload): Survey {
     creatorId: 'local-user',
     isPublished: false,
     answeredCount: 0,
+    shortId: '',
     createdAt: new Date().toISOString(),
     questions: payload.questions.map((question, index) => ({
       ...question,
