@@ -3,7 +3,6 @@ import type { Context, Next } from 'hono'
 import { getCookie } from 'hono/cookie'
 import jwt from 'jsonwebtoken'
 import credentialProvider from '../env'
-import { error } from 'node:console'
 
 type UserContext = {
   id: string
