@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '../hooks/useAuth'
 import { Eye, EyeOff } from 'lucide-react'
+import { Turnstile } from '@marsidev/react-turnstile'
 
 export const Route = createFileRoute('/signup')({
   component: SignupPage,
@@ -17,6 +18,7 @@ function SignupPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -24,6 +26,11 @@ function SignupPage() {
     setMessage(null)
 
     try {
+      if (!turnstileToken) {
+        toast.error('Please wait for captcha verification')
+        return
+      }
+
       await signup({ name, email, password })
       toast.success('Please login with the credentials ...')
       navigate({ to: '/login' })
@@ -89,6 +96,17 @@ function SignupPage() {
             </div>
           </div>
         </label>
+        <div className="flex w-full justify-center min-h-16.25 [&>iframe]:w-full">
+          <Turnstile
+            siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+            onSuccess={(token) => setTurnstileToken(token)}
+            onError={() => setTurnstileToken(null)}
+            options={{
+              theme: 'dark',
+              size: 'flexible',
+            }}
+          />
+        </div>
         <button
           type="submit"
           disabled={loading}
