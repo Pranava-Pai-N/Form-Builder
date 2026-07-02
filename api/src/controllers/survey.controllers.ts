@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid'
 import type { Prisma } from '../generated/prisma'
 import { connectDB } from '../lib/database'
 import credentialProvider from '../env'
+import { surveyCreateSchema } from '../utils/validations/surveyCreations'
 
 interface SurveyQuestionInput {
   id?: string
@@ -66,7 +67,22 @@ const createSurvey = async (content: Context<AppEnv>) => {
 
     const user = content.get('user')
 
-    const { title, description, coverImage, primaryColor, questions } = body
+    const result = surveyCreateSchema.safeParse(body)
+
+    if (!result.success) {
+      const firstErrorMessage = result.error.issues[0]?.message
+
+      return content.json(
+        {
+          success: false,
+          message: `${firstErrorMessage}`,
+          errors: result.error.flatten().formErrors,
+        },
+        400,
+      )
+    }
+
+    const { title, description, coverImage, primaryColor, questions } = result.data
 
     if (
       !title ||

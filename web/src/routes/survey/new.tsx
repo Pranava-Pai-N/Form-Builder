@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { requireAuth } from '@/components/authenticatedRoutes'
 import { createSurvey } from '../../lib/api'
 import type { SurveyPayload } from '../../lib/types'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/survey/new')({
   beforeLoad: requireAuth as (opts: unknown) => Promise<void>,
@@ -49,8 +50,10 @@ function CreateSurveyPage() {
       const response = await createSurvey(surveyPayload)
       navigate({ to: `/survey/${response.survey.shortId}` })
     } catch (error: unknown) {
+      console.log(error)
       if (error instanceof Error) {
         setError(error?.message)
+        toast.error(error?.message)
       } else {
         setError('Unable to create survey. Please try again.')
       }
